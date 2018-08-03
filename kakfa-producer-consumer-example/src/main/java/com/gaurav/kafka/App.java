@@ -3,6 +3,7 @@ package com.gaurav.kafka;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
@@ -16,7 +17,6 @@ import com.gaurav.kafka.constants.IKafkaConstants;
 import com.gaurav.kafka.consumer.ConsumerCreator;
 import com.gaurav.kafka.producer.ProducerCreator;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 public class App {
 
@@ -30,31 +30,29 @@ public class App {
 		    }
 		    else {
 				System.out.println("must specify either Producer or Consumer on command line, exiting.");
-				return;
 			}
 		}
 	}
 
-	static void runConsumer() {
+	private static void runConsumer() {
 		Consumer<Long, String> consumer = ConsumerCreator.createConsumer();
+        Duration duration = Duration.ofSeconds (10);
 
 		while (true) {
-			final ConsumerRecords<Long, String> consumerRecords = consumer.poll(1000);
+			final ConsumerRecords<Long, String> consumerRecords = consumer.poll(duration);
 			if (consumerRecords.count() == 0) {
 				consumer.close();
 				return;
 			}
 
-			consumerRecords.forEach(record -> {
-				loadJSONData(record.value());
-			});
+			consumerRecords.forEach(record -> loadJSONData(record.value()));
 			consumer.commitAsync();
 		}
-		//consumer.close();
+        //consumer.close();
 	}
 
 
-	static String readStringFromURL(String requestURL) throws Exception
+	private static String readStringFromURL(String requestURL) throws Exception
 	{
 		try (Scanner scanner = new Scanner(new URL(requestURL).openStream(),
 				StandardCharsets.UTF_8.toString())) {
@@ -63,9 +61,8 @@ public class App {
 		}
 	}
 
-	static void loadJSONData(String jsonData) {
+	private static void loadJSONData(String jsonData) {
 		try {
-			//Gson gson = new GsonBuilder().create();
 			Type collectionType = new TypeToken<List<StockChart>>(){}.getType();
 			List<StockChart> stockChartList = new Gson().fromJson(jsonData, collectionType);
 
@@ -82,8 +79,8 @@ public class App {
 		}
 	}
 
-	static void runProducer() {
-		String dataFromURL = null;
+	private static void runProducer() {
+		String dataFromURL;
 
 		try {
 			dataFromURL = readStringFromURL("https://api.iextrading.com/1.0/stock/aapl/chart");
@@ -95,7 +92,7 @@ public class App {
 		Producer<Long, String> producer = ProducerCreator.createProducer();
 
 		for (int index = 0; index < IKafkaConstants.MESSAGE_COUNT; index++) {
-			final ProducerRecord<Long, String> record = new ProducerRecord<Long, String>(IKafkaConstants.TOPIC_NAME, dataFromURL);
+			final ProducerRecord<Long, String> record = new ProducerRecord<>(IKafkaConstants.TOPIC_NAME, dataFromURL);
 			try {
 				RecordMetadata metadata = producer.send(record).get();
 				System.out.println("Record sent with key " + index + " to partition " + metadata.partition()
@@ -104,7 +101,6 @@ public class App {
 				System.out.println("Error in sending record execution exception: " + e);
 			} catch (InterruptedException e) {
 				System.out.println("Error in sending record interrupted exception: " + e);
-
 			}
 		}
 	}
