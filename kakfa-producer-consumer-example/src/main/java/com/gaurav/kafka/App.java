@@ -1,5 +1,9 @@
 package com.gaurav.kafka;
 
+import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.kafka.clients.consumer.Consumer;
@@ -44,12 +48,35 @@ public class App {
 		consumer.close();
 	}
 
+
+	static String readStringFromURL(String requestURL) throws IOException
+	{
+		try (Scanner scanner = new Scanner(new URL(requestURL).openStream(),
+				StandardCharsets.UTF_8.toString()))
+		{
+			scanner.useDelimiter("\\A");
+			return scanner.hasNext() ? scanner.next() : "";
+		}
+	}
+
+
 	static void runProducer() {
+
+		String dataFromURL = null;
+
+		try {
+			dataFromURL = readStringFromURL("https://api.iextrading.com/1.0/stock/aapl/chart");
+		} catch (IOException e) {
+			System.out.println("Error in reading URL: ");
+			System.out.println(e);
+			return;
+		}
+
 		Producer<Long, String> producer = ProducerCreator.createProducer();
 
 		for (int index = 0; index < IKafkaConstants.MESSAGE_COUNT; index++) {
-			final ProducerRecord<Long, String> record = new ProducerRecord<Long, String>(IKafkaConstants.TOPIC_NAME,
-					"This is record " + index);
+			//final ProducerRecord<Long, String> record = new ProducerRecord<Long, String>(IKafkaConstants.TOPIC_NAME, "This is record from Joe " + index);
+			final ProducerRecord<Long, String> record = new ProducerRecord<Long, String>(IKafkaConstants.TOPIC_NAME, dataFromURL + index);
 			try {
 				RecordMetadata metadata = producer.send(record).get();
 				System.out.println("Record sent with key " + index + " to partition " + metadata.partition()
