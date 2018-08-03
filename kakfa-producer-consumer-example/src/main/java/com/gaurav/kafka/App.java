@@ -65,7 +65,7 @@ public class App {
 
 	static void loadJSONData(String jsonData) {
 		try {
-			Gson gson = new GsonBuilder().create();
+			//Gson gson = new GsonBuilder().create();
 			Type collectionType = new TypeToken<List<StockChart>>(){}.getType();
 			List<StockChart> stockChartList = new Gson().fromJson(jsonData, collectionType);
 
@@ -83,14 +83,12 @@ public class App {
 	}
 
 	static void runProducer() {
-
 		String dataFromURL = null;
 
 		try {
 			dataFromURL = readStringFromURL("https://api.iextrading.com/1.0/stock/aapl/chart");
 		} catch (Exception e) {
-			System.out.println("Error in reading URL: ");
-			System.out.println(e);
+			System.out.println("Error in reading URL: " + e);
 			return;
 		}
 
@@ -103,11 +101,10 @@ public class App {
 				System.out.println("Record sent with key " + index + " to partition " + metadata.partition()
 				    + " with offset " + metadata.offset());
 			} catch (ExecutionException e) {
-				System.out.println("Error in sending record");
-				System.out.println(e);
+				System.out.println("Error in sending record execution exception: " + e);
 			} catch (InterruptedException e) {
-				System.out.println("Error in sending record");
-				System.out.println(e);
+				System.out.println("Error in sending record interrupted exception: " + e);
+
 			}
 		}
 	}
