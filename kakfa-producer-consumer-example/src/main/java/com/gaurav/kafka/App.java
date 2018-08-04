@@ -51,8 +51,6 @@ public class App {
                     break;
                 else
                     continue;
-				//consumer.close();
-				//return;
 			}
 
 			consumerRecords.forEach(record -> loadJSONData(record.value()));
