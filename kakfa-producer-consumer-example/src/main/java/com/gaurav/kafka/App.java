@@ -18,6 +18,9 @@ import com.gaurav.kafka.consumer.ConsumerCreator;
 import com.gaurav.kafka.producer.ProducerCreator;
 import com.google.gson.Gson;
 
+import static com.gaurav.kafka.constants.IKafkaConstants.CONSUMER_POLL_DURATION;
+import static com.gaurav.kafka.constants.IKafkaConstants.GIVE_UP_COUNT;
+
 public class App {
 
 	public static void main(String[] args) {
@@ -36,19 +39,27 @@ public class App {
 
 	private static void runConsumer() {
 		Consumer<Long, String> consumer = ConsumerCreator.createConsumer();
-        Duration duration = Duration.ofSeconds (10);
+        Duration duration = Duration.ofSeconds (CONSUMER_POLL_DURATION);
+        int noRecordsCount = 0;
 
 		while (true) {
 			final ConsumerRecords<Long, String> consumerRecords = consumer.poll(duration);
+
 			if (consumerRecords.count() == 0) {
-				consumer.close();
-				return;
+                noRecordsCount++;
+                if (noRecordsCount > GIVE_UP_COUNT)
+                    break;
+                else
+                    continue;
+				//consumer.close();
+				//return;
 			}
 
 			consumerRecords.forEach(record -> loadJSONData(record.value()));
 			consumer.commitAsync();
 		}
-        //consumer.close();
+        consumer.close();
+        System.out.println("runConsumer DONE!");
 	}
 
 
@@ -103,6 +114,7 @@ public class App {
 				System.out.println("Error in sending record interrupted exception: " + e);
 			}
 		}
+        System.out.println("runProducer DONE!");
 	}
 
 	public class StockChart {
